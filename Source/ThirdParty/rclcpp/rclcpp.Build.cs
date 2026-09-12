@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnrealBuildTool;
 
@@ -69,7 +70,13 @@ public class rclcpp : ModuleRules
         
         ModuleDepPaths moduleDepPaths = GatherDeps();
         PublicIncludePaths.AddRange(moduleDepPaths.HeaderPaths);
-        PublicAdditionalLibraries.AddRange(moduleDepPaths.LibraryPaths);
+        // RMW implementations must not be link-time dependencies of any module. Every rmw_*_cpp
+        // library exports the full rmw_* API, so a NEEDED entry that precedes librcl in the load
+        // scope binds rcl's rmw_* calls straight to that implementation and bypasses
+        // rmw_implementation's RMW_IMPLEMENTATION selection. They stay in RuntimeDependencies so
+        // rmw_implementation can dlopen the selected one.
+        var RmwImplementation = new Regex(@"librmw_(cyclonedds|fastrtps|fastrtps_dynamic|connextdds)_cpp\.so");
+        PublicAdditionalLibraries.AddRange(moduleDepPaths.LibraryPaths.Where(lib => !RmwImplementation.IsMatch(Path.GetFileName(lib))));
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
