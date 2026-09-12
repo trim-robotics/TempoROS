@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnrealBuildTool;
 
@@ -75,7 +76,8 @@ public class rclcpp : ModuleRules
         // undefined on Linux, which -Wundef -Werror rejects. Suppressing warnings per-macro in
         // Patches/ would be a treadmill across ~226 packages. Real errors still surface normally.
         PublicSystemIncludePaths.AddRange(moduleDepPaths.HeaderPaths);
-        PublicAdditionalLibraries.AddRange(moduleDepPaths.LibraryPaths);
+        var RmwImplementation = new Regex(@"librmw_(cyclonedds|fastrtps|fastrtps_dynamic|connextdds)_cpp\.so");
+        PublicAdditionalLibraries.AddRange(moduleDepPaths.LibraryPaths.Where(lib => !RmwImplementation.IsMatch(Path.GetFileName(lib))));
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
