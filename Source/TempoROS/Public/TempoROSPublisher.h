@@ -24,10 +24,15 @@ inline rclcpp::PublisherOptions TempoROSPublisherOptions()
 {
 	// rclcpp::PublisherOptions defaults its allocator type to std::pmr::polymorphic_allocator<void>,
 	// which picks up the default memory resource set in SetUnrealDefaultMemoryResource() at startup.
-	rclcpp::PublisherOptions PublisherOptions;
-	// See TempoROSSubscriptionOptions.
-	PublisherOptions.use_default_callbacks = false;
-	return PublisherOptions;
+	static const rclcpp::PublisherOptions Shared = []
+	{
+		rclcpp::PublisherOptions PublisherOptions;
+		// See TempoROSSubscriptionOptions.
+		PublisherOptions.use_default_callbacks = false;
+		PublisherOptions.template to_rcl_publisher_options<void>(rclcpp::QoS(1));
+		return PublisherOptions;
+	}();
+	return Shared;
 }
 
 static FString PrependNodeName(const std::shared_ptr<rclcpp::Node>& Node, const FString& Topic)

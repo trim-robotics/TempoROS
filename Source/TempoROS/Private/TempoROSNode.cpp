@@ -76,6 +76,10 @@ void UTempoROSNode::BeginDestroy()
 		TFListener.Reset();
 		StaticTFPublisher.Reset();
 		DynamicTFPublisher.Reset();
+		if (IsEngineExitRequested() && Node)
+		{
+			new std::shared_ptr<rclcpp::Node>(MoveTemp(Node));
+		}
 		Node.reset();
 	}
 	catch (const std::exception& Exception)

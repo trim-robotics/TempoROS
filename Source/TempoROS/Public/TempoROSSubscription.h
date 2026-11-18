@@ -22,14 +22,19 @@ inline rclcpp::SubscriptionOptions TempoROSSubscriptionOptions()
 	// rclcpp::SubscriptionOptions defaults its allocator type to std::pmr::polymorphic_allocator<void>,
 	// which picks up the default memory resource set in SetUnrealDefaultMemoryResource() at startup. The
 	// default message memory strategy likewise default-constructs its allocator from that resource.
-	rclcpp::SubscriptionOptions SubscriptionOptions;
-	// Do not register any QOS event callbacks (and do not let rclcpp register its defaults). Doing so
-	// makes rclcpp's header code, compiled into the calling Unreal module and so allocating with that
-	// module's operator new (FMemory), insert into maps that ~SubscriptionBase() / ~PublisherBase() free
-	// inside the prebuilt rclcpp library, which corrupts the heap when the entity is destroyed
-	// (https://github.com/tempo-sim/TempoROS/issues/82).
-	SubscriptionOptions.use_default_callbacks = false;
-	return SubscriptionOptions;
+	static const rclcpp::SubscriptionOptions Shared = []
+	{
+		rclcpp::SubscriptionOptions SubscriptionOptions;
+		// Do not register any QOS event callbacks (and do not let rclcpp register its defaults). Doing so
+		// makes rclcpp's header code, compiled into the calling Unreal module and so allocating with that
+		// module's operator new (FMemory), insert into maps that ~SubscriptionBase() / ~PublisherBase() free
+		// inside the prebuilt rclcpp library, which corrupts the heap when the entity is destroyed
+		// (https://github.com/tempo-sim/TempoROS/issues/82).
+		SubscriptionOptions.use_default_callbacks = false;
+		SubscriptionOptions.to_rcl_subscription_options(rclcpp::QoS(1));
+		return SubscriptionOptions;
+	}();
+	return Shared;
 }
 
 template <class MessageType>
